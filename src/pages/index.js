@@ -131,7 +131,7 @@ const requestTrajectory = (callback, launchPosition, timestamp) => {
         "atmosphere:wind-error": 0,
         "altitude-model:ascent-rate": 0.3,
         "altitude-model:descent-rate": 1.5,
-        "altitude-model:burst-altitude": 000,
+        "altitude-model:burst-altitude": 20000,
       },
       {
         headers: {
