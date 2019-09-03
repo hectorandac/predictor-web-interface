@@ -78,7 +78,7 @@ const MapTerrain = ({ launchPosition, multiPolyline = [] }) => {
   )
 }
 
-const requestWindPull = (callback, launchPosition) => {
+const requestWindPull = (callback, launchPosition, timestamp) => {
   axios
     .post(
       "https://wind-predictor-back-end.herokuapp.com/winddata/pull",
@@ -86,7 +86,7 @@ const requestWindPull = (callback, launchPosition) => {
         "launch-site:latitude": launchPosition[0],
         "launch-site:longitude": launchPosition[1],
         "launch-site:altitude": 0,
-        "launch-site:timestamp": 1567970657,
+        "launch-site:timestamp": timestamp,
         "atmosphere:wind-error": 0,
         "altitude-model:ascent-rate": 3,
         "altitude-model:descent-rate": 5,
@@ -119,7 +119,7 @@ const requestInterval = (callback, target) => {
     })
 }
 
-const requestTrajectory = (callback, launchPosition) => {
+const requestTrajectory = (callback, launchPosition, timestamp) => {
   axios
     .post(
       "https://wind-predictor-back-end.herokuapp.com/predict",
@@ -127,11 +127,11 @@ const requestTrajectory = (callback, launchPosition) => {
         "launch-site:latitude": launchPosition[0],
         "launch-site:longitude": launchPosition[1],
         "launch-site:altitude": 0,
-        "launch-site:timestamp": 1567460317,
+        "launch-site:timestamp": timestamp,
         "atmosphere:wind-error": 0,
-        "altitude-model:ascent-rate": 3,
-        "altitude-model:descent-rate": 5,
-        "altitude-model:burst-altitude": 10000,
+        "altitude-model:ascent-rate": 0.3,
+        "altitude-model:descent-rate": 1.5,
+        "altitude-model:burst-altitude": 000,
       },
       {
         headers: {
@@ -152,6 +152,7 @@ const IndexPage = () => {
   const [time, setTime] = useState(null)
   const [launchPosition, setLaunchPosition] = useState([18.487876, -69.962292])
   const [trajectory, setTrajectory] = useState([])
+  const [timestamp, setTimestamp] = useState(Math.round((new Date()).getTime() / 1000))
 
   const onButtonClick = () => {
     function queryProgress(target, parent) {
@@ -170,7 +171,7 @@ const IndexPage = () => {
               } else {
                 console.log(error)
               }
-            }, launchPosition);
+            }, launchPosition, timestamp);
           }
         } else {
           console.log(error)
@@ -189,7 +190,7 @@ const IndexPage = () => {
       } else {
         console.log(error)
       }
-    }, launchPosition)
+    }, launchPosition, timestamp)
   }
 
   return (
@@ -223,6 +224,18 @@ const IndexPage = () => {
           value={launchPosition[1]}
           onChange={(node) => { setLaunchPosition([launchPosition[0], node.target.value]) }}
           variant="outlined"
+        />
+
+        <TextField
+          id="datetime-local"
+          label="Lauch timestamp"
+          type="datetime-local"
+          variant="outlined"
+          defaultValue={new Date()}
+          onChange={(node) => { setTimestamp(Math.round((new Date(node.target.value)).getTime() / 1000)); console.log(timestamp) }}
+          InputLabelProps={{
+            shrink: true,
+          }}
         />
 
         <br />
