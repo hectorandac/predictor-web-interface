@@ -8,6 +8,8 @@ import styled from "styled-components"
 import axios from "axios"
 import Card from "@material-ui/core/Card"
 import LinearProgress from "@material-ui/core/LinearProgress"
+import Button from '@material-ui/core/Button';
+import TextField from '@material-ui/core/TextField';
 
 import { Map, Marker, Popup, TileLayer, Polyline } from "react-leaflet"
 
@@ -16,8 +18,8 @@ const ControlPanel = styled(Card)`
   width: 360px;
   height: 100%;
   max-height: 600px;
+  background: rgba(255, 255, 255, 0.8) !important;
   overflow: auto;
-  background: rgba(255, 255, 255, 0.7) !important;
   border-radius: 8px;
   right: 16px;
   top: 16px;
@@ -48,7 +50,7 @@ const MapTerrain = ({ launchPosition, multiPolyline = [] }) => {
       zoom={13}
     >
       <TileLayer
-        url="https://stamen-tiles-{s}.a.ssl.fastly.net/terrain/{z}/{x}/{y}{r}.png"
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
       />
 
@@ -57,8 +59,8 @@ const MapTerrain = ({ launchPosition, multiPolyline = [] }) => {
           <Popup>{launchPosition}</Popup>
         </Marker>
       ) : (
-        <></>
-      )}
+          <></>
+        )}
 
       {multiPolyline[multiPolyline.length - 1] ? (
         <Marker
@@ -68,21 +70,21 @@ const MapTerrain = ({ launchPosition, multiPolyline = [] }) => {
           <Popup>{multiPolyline[multiPolyline.length - 1]}</Popup>
         </Marker>
       ) : (
-        <></>
-      )}
+          <></>
+        )}
 
       <Polyline color="red" positions={multiPolyline} />
     </Map>
   )
 }
 
-const requestWindPull = callback => {
+const requestWindPull = (callback, launchPosition) => {
   axios
     .post(
       "https://wind-predictor-back-end.herokuapp.com/winddata/pull",
       {
-        "launch-site:latitude": 18.487876,
-        "launch-site:longitude": -69.962292,
+        "launch-site:latitude": launchPosition[0],
+        "launch-site:longitude": launchPosition[1],
         "launch-site:altitude": 0,
         "launch-site:timestamp": 1567970657,
         "atmosphere:wind-error": 0,
@@ -117,13 +119,13 @@ const requestInterval = (callback, target) => {
     })
 }
 
-const requestTrajectory = (callback) => {
+const requestTrajectory = (callback, launchPosition) => {
   axios
     .post(
       "https://wind-predictor-back-end.herokuapp.com/predict",
       {
-        "launch-site:latitude": 18.487876,
-        "launch-site:longitude": -69.962292,
+        "launch-site:latitude": launchPosition[0],
+        "launch-site:longitude": launchPosition[1],
         "launch-site:altitude": 0,
         "launch-site:timestamp": 1567460317,
         "atmosphere:wind-error": 0,
@@ -153,7 +155,7 @@ const IndexPage = () => {
 
   const onButtonClick = () => {
     function queryProgress(target, parent) {
-      requestInterval(function(response, error) {
+      requestInterval(function (response, error) {
         if (response !== null) {
           setLoading(response.data.gfs_percent)
           setTime(response.data.gfs_timeremaining)
@@ -161,12 +163,14 @@ const IndexPage = () => {
             clearInterval(parent);
             requestTrajectory(function (response, error) {
               if (response !== null) {
-                setTrajectory(response.data.output.map((item) => [item[1], item[2]]))
+                let coordinates = response.data.output.map((item) => [item[1], item[2]])
+                coordinates.unshift(launchPosition);
+                setTrajectory(coordinates)
                 console.log(response)
               } else {
                 console.log(error)
               }
-            });
+            }, launchPosition);
           }
         } else {
           console.log(error)
@@ -174,7 +178,7 @@ const IndexPage = () => {
       }, target)
     }
 
-    requestWindPull(function(response, error) {
+    requestWindPull(function (response, error) {
       if (response !== null) {
         const target = response.data.output
         setLoading(0)
@@ -185,7 +189,7 @@ const IndexPage = () => {
       } else {
         console.log(error)
       }
-    })
+    }, launchPosition)
   }
 
   return (
@@ -198,13 +202,35 @@ const IndexPage = () => {
             <LinearProgress variant="determinate" value={loading} />
           </>
         ) : (
-          <></>
-        )}
+            <></>
+          )}
+
+        <TextField
+          style={{ width: '100%' }}
+          id="outlined-name"
+          label="Latitude"
+          margin="normal"
+          value={launchPosition[0]}
+          onChange={(node) => { setLaunchPosition([node.target.value, launchPosition[1]]) }}
+          variant="outlined"
+        />
+
+        <TextField
+          style={{ width: '100%' }}
+          id="outlined-name"
+          label="Longitude"
+          margin="normal"
+          value={launchPosition[1]}
+          onChange={(node) => { setLaunchPosition([launchPosition[0], node.target.value]) }}
+          variant="outlined"
+        />
+
         <br />
-        <button onClick={onButtonClick}>Predecir trayectoria</button>
+        <Button variant="contained" color="primary" onClick={onButtonClick}>Predecir trayectoria</Button>
+        <Button variant="contained" style={{ marginTop: '16px' }} onClick={() => (setTrajectory([]))}>Limpiar resultados</Button>
       </ControlPanel>
       <MapTerrain launchPosition={launchPosition} multiPolyline={trajectory} />
-    </Layout>
+    </Layout >
   )
 }
 
