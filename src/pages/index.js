@@ -9,6 +9,7 @@ import Card from "@material-ui/core/Card"
 import LinearProgress from "@material-ui/core/LinearProgress"
 import Button from '@material-ui/core/Button';
 import TextField from '@material-ui/core/TextField';
+import InputAdornment from '@material-ui/core/InputAdornment';
 
 const ControlPanel = styled(Card)`
   position: absolute;
@@ -16,12 +17,12 @@ const ControlPanel = styled(Card)`
   height: 100%;
   max-height: 600px;
   background: rgba(255, 255, 255, 0.8) !important;
-  overflow: auto;
   border-radius: 8px;
   right: 16px;
   top: 16px;
   padding: 32px;
   z-index: 1000;
+  overflow: auto !important;
 `
 
 const MapTerrain = ({ launchPosition, multiPolyline = [] }) => {
@@ -89,19 +90,19 @@ const MapTerrain = ({ launchPosition, multiPolyline = [] }) => {
   }
 }
 
-const requestWindPull = (callback, launchPosition, timestamp) => {
+const requestWindPull = (callback, launchPosition, timestamp, altitude, ascentR, descentR) => {
   axios
     .post(
       "https://wind-predictor-back-end.herokuapp.com/winddata/pull",
       {
         "launch-site:latitude": launchPosition[0],
         "launch-site:longitude": launchPosition[1],
-        "launch-site:altitude": 0,
+        "launch-site:altitude": altitude,
         "launch-site:timestamp": timestamp,
         "atmosphere:wind-error": 0,
-        "altitude-model:ascent-rate": 3,
-        "altitude-model:descent-rate": 5,
-        "altitude-model:burst-altitude": 10000,
+        "altitude-model:ascent-rate": ascentR,
+        "altitude-model:descent-rate": descentR,
+        "altitude-model:burst-altitude": 3000,
       },
       {
         headers: {
@@ -130,18 +131,18 @@ const requestInterval = (callback, target) => {
     })
 }
 
-const requestTrajectory = (callback, launchPosition, timestamp) => {
+const requestTrajectory = (callback, launchPosition, timestamp, altitude, ascentR, descentR) => {
   axios
     .post(
       "https://wind-predictor-back-end.herokuapp.com/predict",
       {
         "launch-site:latitude": launchPosition[0],
         "launch-site:longitude": launchPosition[1],
-        "launch-site:altitude": 0,
+        "launch-site:altitude": altitude,
         "launch-site:timestamp": timestamp,
         "atmosphere:wind-error": 0,
-        "altitude-model:ascent-rate": 0.3,
-        "altitude-model:descent-rate": 1.5,
+        "altitude-model:ascent-rate": ascentR,
+        "altitude-model:descent-rate": descentR,
         "altitude-model:burst-altitude": 20000,
       },
       {
@@ -164,6 +165,9 @@ const IndexPage = () => {
   const [launchPosition, setLaunchPosition] = useState([18.487876, -69.962292])
   const [trajectory, setTrajectory] = useState([])
   const [timestamp, setTimestamp] = useState(Math.round((new Date()).getTime() / 1000))
+  const [launchAltitude, setLaunchAltitude] = useState(0)
+  const [ascentRate, setAscentRate] = useState(5)
+  const [descentRate, setDescentRate] = useState(9.8)
 
   const onButtonClick = () => {
     function queryProgress(target, parent) {
@@ -182,7 +186,7 @@ const IndexPage = () => {
               } else {
                 console.log(error)
               }
-            }, launchPosition, timestamp);
+            }, launchPosition, timestamp, launchAltitude, ascentRate, descentRate);
           }
         } else {
           console.log(error)
@@ -216,10 +220,9 @@ const IndexPage = () => {
         ) : (
             <></>
           )}
-
         <TextField
           style={{ width: '100%' }}
-          id="outlined-name"
+          id="latitude"
           label="Latitude"
           margin="normal"
           value={launchPosition[0]}
@@ -229,7 +232,7 @@ const IndexPage = () => {
 
         <TextField
           style={{ width: '100%' }}
-          id="outlined-name"
+          id="longitude"
           label="Longitude"
           margin="normal"
           value={launchPosition[1]}
@@ -238,10 +241,12 @@ const IndexPage = () => {
         />
 
         <TextField
-          id="datetime-local"
-          label="Lauch timestamp"
+          style={{ width: '100%' }}
+          id="launch-time"
+          label="Launch timestamp"
           type="datetime-local"
           variant="outlined"
+          margin="normal"
           defaultValue={new Date()}
           onChange={(node) => { setTimestamp(Math.round((new Date(node.target.value)).getTime() / 1000)); console.log(timestamp) }}
           InputLabelProps={{
@@ -249,7 +254,46 @@ const IndexPage = () => {
           }}
         />
 
-        <br />
+        <TextField
+          style={{ width: '100%' }}
+          label="Launch altitude"
+          id="launch-altitude"
+          type="number"
+          margin="normal"
+          onChange={(node) => { setLaunchAltitude(node.target.value) }}
+          value={launchAltitude}
+          InputProps={{
+            endAdornment: <InputAdornment position="end">m</InputAdornment>,
+          }}
+          variant="outlined"
+        />
+
+        <TextField
+          style={{ width: '100%' }}
+          label="Ascent Rate"
+          id="ascent-rate"
+          margin="normal"
+          onChange={(node) => { setAscentRate(node.target.value) }}
+          value={ascentRate}
+          InputProps={{
+            endAdornment: <InputAdornment position="end">m/s</InputAdornment>,
+          }}
+          variant="outlined"
+        />
+
+        <TextField
+          style={{ width: '100%' }}
+          label="Descent Rate"
+          id="descent-rate"
+          margin="normal"
+          onChange={(node) => { setDescentRate(node.target.value) }}
+          value={descentRate}
+          InputProps={{
+            endAdornment: <InputAdornment position="end">m/s</InputAdornment>,
+          }}
+          variant="outlined"
+        />
+
         <Button variant="contained" color="primary" onClick={onButtonClick}>Predecir trayectoria</Button>
         <Button variant="contained" style={{ marginTop: '16px' }} onClick={() => (setTrajectory([]))}>Limpiar resultados</Button>
       </ControlPanel>
