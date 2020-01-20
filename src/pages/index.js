@@ -43,39 +43,43 @@ const landingIcon = Leaflet.icon({
 
 const MapTerrain = ({ launchPosition, multiPolyline = [] }) => {
   const mapCenter = [18.487876, -69.962292]
-  return (
-    <Map
-      style={{ width: "100%", height: "100vh" }}
-      center={launchPosition || mapCenter}
-      zoom={13}
-    >
-      <TileLayer
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
-      />
+  if (typeof window !== `undefined`) {
+    return (
+      <Map
+        style={{ width: "100%", height: "100vh" }}
+        center={launchPosition || mapCenter}
+        zoom={13}
+      >
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+        />
 
-      {launchPosition ? (
-        <Marker position={launchPosition} icon={launchIcon}>
-          <Popup>{launchPosition}</Popup>
-        </Marker>
-      ) : (
-          <></>
-        )}
+        {launchPosition ? (
+          <Marker position={launchPosition} icon={launchIcon}>
+            <Popup>{launchPosition}</Popup>
+          </Marker>
+        ) : (
+            <></>
+          )}
 
-      {multiPolyline[multiPolyline.length - 1] ? (
-        <Marker
-          position={multiPolyline[multiPolyline.length - 1]}
-          icon={landingIcon}
-        >
-          <Popup>{multiPolyline[multiPolyline.length - 1]}</Popup>
-        </Marker>
-      ) : (
-          <></>
-        )}
+        {multiPolyline[multiPolyline.length - 1] ? (
+          <Marker
+            position={multiPolyline[multiPolyline.length - 1]}
+            icon={landingIcon}
+          >
+            <Popup>{multiPolyline[multiPolyline.length - 1]}</Popup>
+          </Marker>
+        ) : (
+            <></>
+          )}
 
-      <Polyline color="red" positions={multiPolyline} />
-    </Map>
-  )
+        <Polyline color="red" positions={multiPolyline} />
+      </Map>
+    )
+  } else {
+    return <></>
+  }
 }
 
 const requestWindPull = (callback, launchPosition, timestamp) => {
