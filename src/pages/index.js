@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react"
 import Layout from "../components/layout"
 import SEO from "../components/seo"
-import Leaflet from "leaflet"
 import locationA from "../images/location_a.png"
 import locationB from "../images/location_b.png"
 import styled from "styled-components"
@@ -11,7 +10,30 @@ import LinearProgress from "@material-ui/core/LinearProgress"
 import Button from '@material-ui/core/Button';
 import TextField from '@material-ui/core/TextField';
 
-import { Map, Marker, Popup, TileLayer, Polyline } from "react-leaflet"
+if (typeof window !== `undefined`) {
+  const Leaflet = require("leaflet")
+  const ReactLeaflet = require("react-leaflet");
+  
+  const Map = ReactLeaflet.Map
+  const Marker = ReactLeaflet.Marker
+  const Popup = ReactLeaflet.Popup
+  const TileLayer = ReactLeaflet.TileLayer
+  const Polyline = ReactLeaflet.Polyline
+
+  const launchIcon = Leaflet.icon({
+    iconUrl: locationA,
+    iconSize: [32, 32],
+    iconAnchor: [16, 32],
+    popupAnchor: [0, -32],
+  })
+
+  const landingIcon = Leaflet.icon({
+    iconUrl: locationB,
+    iconSize: [32, 32],
+    iconAnchor: [16, 32],
+    popupAnchor: [0, -32],
+  })
+}
 
 const ControlPanel = styled(Card)`
   position: absolute;
@@ -26,20 +48,6 @@ const ControlPanel = styled(Card)`
   padding: 32px;
   z-index: 1000;
 `
-
-const launchIcon = Leaflet.icon({
-  iconUrl: locationA,
-  iconSize: [32, 32],
-  iconAnchor: [16, 32],
-  popupAnchor: [0, -32],
-})
-
-const landingIcon = Leaflet.icon({
-  iconUrl: locationB,
-  iconSize: [32, 32],
-  iconAnchor: [16, 32],
-  popupAnchor: [0, -32],
-})
 
 const MapTerrain = ({ launchPosition, multiPolyline = [] }) => {
   const mapCenter = [18.487876, -69.962292]
