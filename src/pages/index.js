@@ -1,163 +1,15 @@
-import React, { useState, useEffect } from "react"
+import React, { useState } from "react"
 import Layout from "../components/layout"
 import SEO from "../components/seo"
-import locationA from "../images/location_a.png"
-import locationB from "../images/location_b.png"
-import styled from "styled-components"
-import axios from "axios"
-import Card from "@material-ui/core/Card"
+import { ControlPanel } from "./index.styles"
+
+import MapTerrain from '../components/map'
+import { predictionStatus, predictTrajectory, downloadWindData } from "../components/predictor"
+
 import LinearProgress from "@material-ui/core/LinearProgress"
 import Button from '@material-ui/core/Button';
 import TextField from '@material-ui/core/TextField';
 import InputAdornment from '@material-ui/core/InputAdornment';
-
-const ControlPanel = styled(Card)`
-  position: absolute;
-  width: 360px;
-  height: 100%;
-  max-height: 600px;
-  background: rgba(255, 255, 255, 0.8) !important;
-  border-radius: 8px;
-  right: 16px;
-  top: 16px;
-  padding: 32px;
-  z-index: 1000;
-  overflow: auto !important;
-`
-
-const MapTerrain = ({ launchPosition, multiPolyline = [] }) => {
-  const mapCenter = [18.487876, -69.962292]
-  if (typeof window !== `undefined`) {
-
-    const Leaflet = require("leaflet")
-    const ReactLeaflet = require("react-leaflet");
-  
-    const Map = ReactLeaflet.Map
-    const Marker = ReactLeaflet.Marker
-    const Popup = ReactLeaflet.Popup
-    const TileLayer = ReactLeaflet.TileLayer
-    const Polyline = ReactLeaflet.Polyline
-
-    const launchIcon = Leaflet.icon({
-      iconUrl: locationA,
-      iconSize: [32, 32],
-      iconAnchor: [16, 32],
-      popupAnchor: [0, -32],
-    })
-
-    const landingIcon = Leaflet.icon({
-      iconUrl: locationB,
-      iconSize: [32, 32],
-      iconAnchor: [16, 32],
-      popupAnchor: [0, -32],
-    })
-
-    return (
-      <Map
-        style={{ width: "100%", height: "100vh" }}
-        center={launchPosition || mapCenter}
-        zoom={13}
-      >
-        <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
-        />
-
-        {launchPosition ? (
-          <Marker position={launchPosition} icon={launchIcon}>
-            <Popup>{launchPosition}</Popup>
-          </Marker>
-        ) : (
-            <></>
-          )}
-
-        {multiPolyline[multiPolyline.length - 1] ? (
-          <Marker
-            position={multiPolyline[multiPolyline.length - 1]}
-            icon={landingIcon}
-          >
-            <Popup>{multiPolyline[multiPolyline.length - 1]}</Popup>
-          </Marker>
-        ) : (
-            <></>
-          )}
-
-        <Polyline color="red" positions={multiPolyline} />
-      </Map>
-    )
-  } else {
-    return <></>
-  }
-}
-
-const requestWindPull = (callback, launchPosition, timestamp, altitude, ascentR, descentR) => {
-  axios
-    .post(
-      "https://wind-predictor-back-end.herokuapp.com/winddata/pull",
-      {
-        "launch-site:latitude": launchPosition[0],
-        "launch-site:longitude": launchPosition[1],
-        "launch-site:altitude": altitude,
-        "launch-site:timestamp": timestamp,
-        "atmosphere:wind-error": 0,
-        "altitude-model:ascent-rate": ascentR,
-        "altitude-model:descent-rate": descentR,
-        "altitude-model:burst-altitude": 3000,
-      },
-      {
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        },
-      }
-    )
-    .then(response => {
-      callback(response, null)
-    })
-    .catch(error => {
-      callback(null, error)
-    })
-}
-
-const requestInterval = (callback, target) => {
-  axios
-    .get(
-      `https://wind-predictor-back-end.herokuapp.com/status/${target}?timestamp=${new Date().getTime()}`
-    )
-    .then(response => {
-      callback(response, null)
-    })
-    .catch(error => {
-      callback(null, error)
-    })
-}
-
-const requestTrajectory = (callback, launchPosition, timestamp, altitude, ascentR, descentR) => {
-  axios
-    .post(
-      "https://wind-predictor-back-end.herokuapp.com/predict",
-      {
-        "launch-site:latitude": launchPosition[0],
-        "launch-site:longitude": launchPosition[1],
-        "launch-site:altitude": altitude,
-        "launch-site:timestamp": timestamp,
-        "atmosphere:wind-error": 0,
-        "altitude-model:ascent-rate": ascentR,
-        "altitude-model:descent-rate": descentR,
-        "altitude-model:burst-altitude": 20000,
-      },
-      {
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        },
-      }
-    )
-    .then(response => {
-      callback(response, null)
-    })
-    .catch(error => {
-      callback(null, error)
-    })
-}
 
 const IndexPage = () => {
   const [loading, setLoading] = useState(null)
@@ -168,16 +20,17 @@ const IndexPage = () => {
   const [launchAltitude, setLaunchAltitude] = useState(0)
   const [ascentRate, setAscentRate] = useState(5)
   const [descentRate, setDescentRate] = useState(9.8)
+  const [burstAltitude, setBurstAltitude] = useState(2000)
 
   const onButtonClick = () => {
     function queryProgress(target, parent) {
-      requestInterval(function (response, error) {
+      predictionStatus(function (response, error) {
         if (response !== null) {
           setLoading(response.data.gfs_percent)
           setTime(response.data.gfs_timeremaining)
           if (response.data.gfs_complete) {
             clearInterval(parent);
-            requestTrajectory(function (response, error) {
+            predictTrajectory(function (response, error) {
               if (response !== null) {
                 let coordinates = response.data.output.map((item) => [item[1], item[2]])
                 coordinates.unshift(launchPosition);
@@ -186,7 +39,7 @@ const IndexPage = () => {
               } else {
                 console.log(error)
               }
-            }, launchPosition, timestamp, launchAltitude, ascentRate, descentRate);
+            }, launchPosition, timestamp, launchAltitude, ascentRate, descentRate, burstAltitude);
           }
         } else {
           console.log(error)
@@ -194,7 +47,7 @@ const IndexPage = () => {
       }, target)
     }
 
-    requestWindPull(function (response, error) {
+    downloadWindData(function (response, error) {
       if (response !== null) {
         const target = response.data.output
         setLoading(0)
@@ -205,7 +58,7 @@ const IndexPage = () => {
       } else {
         console.log(error)
       }
-    }, launchPosition, timestamp)
+    }, launchPosition, timestamp, launchAltitude, ascentRate, descentRate, burstAltitude)
   }
 
   return (
@@ -290,6 +143,21 @@ const IndexPage = () => {
           value={descentRate}
           InputProps={{
             endAdornment: <InputAdornment position="end">m/s</InputAdornment>,
+          }}
+          variant="outlined"
+        />
+
+
+        <TextField
+          style={{ width: '100%' }}
+          label="Burst Altitude"
+          id="burst-altitude"
+          type="number"
+          margin="normal"
+          onChange={(node) => { setBurstAltitude(node.target.value) }}
+          value={burstAltitude}
+          InputProps={{
+            endAdornment: <InputAdornment position="end">m</InputAdornment>,
           }}
           variant="outlined"
         />
