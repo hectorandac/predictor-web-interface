@@ -1,7 +1,6 @@
 import React, { useState } from "react"
 import Layout from "../components/layout"
 import SEO from "../components/seo"
-import { ControlPanel } from "./index.styles"
 
 import MapTerrain from '../components/map'
 import { predictionStatus, predictTrajectory, downloadWindData } from "../components/predictor"
@@ -10,6 +9,22 @@ import LinearProgress from "@material-ui/core/LinearProgress"
 import Button from '@material-ui/core/Button';
 import TextField from '@material-ui/core/TextField';
 import InputAdornment from '@material-ui/core/InputAdornment';
+
+import Card from "@material-ui/core/Card"
+
+const ControlPanel = styled(Card)`
+  position: absolute;
+  width: 360px;
+  height: 100%;
+  max-height: 600px;
+  background: rgba(255, 255, 255, 0.8) !important;
+  border-radius: 8px;
+  right: 16px;
+  top: 16px;
+  padding: 32px;
+  z-index: 1000;
+  overflow: auto !important;
+`
 
 const IndexPage = () => {
   const [loading, setLoading] = useState(null)
