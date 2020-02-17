@@ -10,7 +10,8 @@ import Button from '@material-ui/core/Button';
 import TextField from '@material-ui/core/TextField';
 import InputAdornment from '@material-ui/core/InputAdornment';
 
-import Card from "@material-ui/core/Card"
+import styled from "styled-components";
+import Card from "@material-ui/core/Card";
 
 const ControlPanel = styled(Card)`
   position: absolute;
